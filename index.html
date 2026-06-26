@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D校园投诉系统 - 入口</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/common.css">
+<link rel="stylesheet" href="css/entrance.css">
+</head>
+<body class="entrance-body">
+
+<!-- 背景光斑层 -->
+<div class="ambient-bg">
+  <span class="blob blob-1"></span>
+  <span class="blob blob-2"></span>
+  <span class="blob blob-3"></span>
+</div>
+
+<main class="entrance-card">
+  <div class="card-header">
+    <div class="eyebrow">QAU · 校园服务</div>
+    <h1 class="entrance-title">3D 校园投诉系统</h1>
+    <p class="entrance-subtitle">青岛农业大学 · 选择身份进入系统</p>
+  </div>
+
+  <!-- 选项区 -->
+  <div class="entrance-options" id="options-area">
+    <button class="entrance-btn anonymous" onclick="enterAnonymous()">
+      <span class="btn-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M5.5 21a8.38 8.38 0 0 1 13 0"/>
+          <path d="M3 12a9 9 0 0 1 18 0" stroke-dasharray="2 3"/>
+        </svg>
+      </span>
+      <span class="label-wrap">
+        <span class="main">匿名进入</span>
+        <span class="desc">无需填写信息，直接进入地图投诉</span>
+      </span>
+      <span class="arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </span>
+    </button>
+    <button class="entrance-btn realname" onclick="showRealnameForm()">
+      <span class="btn-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="5" width="18" height="14" rx="2"/>
+          <circle cx="8.5" cy="11" r="2"/>
+          <path d="M14 10h4M14 13h4M5.5 16h6"/>
+        </svg>
+      </span>
+      <span class="label-wrap">
+        <span class="main">实名进入</span>
+        <span class="desc">填写学号和姓名，便于学校跟进反馈</span>
+      </span>
+      <span class="arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </span>
+    </button>
+  </div>
+
+  <!-- 实名表单 -->
+  <div class="realname-form" id="realname-form">
+    <div class="form-group">
+      <label for="student-id">学号</label>
+      <input type="text" id="student-id" placeholder="请输入学号" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label for="student-name">姓名</label>
+      <input type="text" id="student-name" placeholder="请输入姓名" autocomplete="off">
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="backToOptions()">返回</button>
+      <button class="btn btn-primary" onclick="enterRealname()">进入系统</button>
+    </div>
+  </div>
+
+  <div class="entrance-divider"></div>
+  <div class="entrance-footer">
+    后台管理请访问 <a href="admin.html" class="admin-link">学校端入口 →</a>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script src="js/storage.js"></script>
+<script>
+function showToast(msg, type='info') {
+  const toast = document.getElementById('toast');
+  toast.className = type;
+  toast.innerHTML = `<span class="toast-icon">${type==='success'?'✅':type==='error'?'❌':'ℹ️'}</span>${msg}`;
+  toast.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// 匿名进入
+function enterAnonymous() {
+  Store.setUser({ type: 'anonymous', studentId: '', name: '匿名用户' });
+  window.location.href = 'student.html';
+}
+
+// 显示实名表单
+function showRealnameForm() {
+  document.getElementById('options-area').classList.add('hide');
+  document.getElementById('realname-form').classList.add('show');
+}
+
+// 返回选项
+function backToOptions() {
+  document.getElementById('options-area').classList.remove('hide');
+  document.getElementById('realname-form').classList.remove('show');
+}
+
+// 实名进入
+function enterRealname() {
+  const id = document.getElementById('student-id').value.trim();
+  const name = document.getElementById('student-name').value.trim();
+  if (!id) { showToast('请输入学号', 'error'); return; }
+  if (!name) { showToast('请输入姓名', 'error'); return; }
+  Store.setUser({ type: 'realname', studentId: id, name: name });
+  showToast('欢迎，' + name + '！', 'success');
+  setTimeout(() => { window.location.href = 'student.html'; }, 600);
+}
+</script>
+</body>
+</html>

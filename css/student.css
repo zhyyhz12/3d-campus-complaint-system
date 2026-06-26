@@ -1,0 +1,328 @@
+/* ═══ 学生端样式 ═══ */
+.student-body {
+  overflow: hidden;
+  background: #87ceeb;
+  height: 100vh;
+}
+
+#map-container { width: 100%; height: 100%; position: relative; }
+#label-container { position: absolute; top: 0; left: 0; pointer-events: none; width: 100%; height: 100%; }
+
+/* 加载画面 */
+#loading {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: #f7faf8; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; z-index: 100;
+  transition: opacity 0.5s var(--ease-ios); gap: 0;
+}
+#loading.hidden { opacity: 0; pointer-events: none; }
+
+.loading-map-icon {
+  font-size: 72px;
+  line-height: 1;
+  animation: pulse-map 2s ease-in-out infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes pulse-map {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50%      { transform: scale(1.08); opacity: 1; }
+}
+
+.bouncing-bars {
+  display: flex; align-items: flex-end; gap: 4px; height: 48px;
+  margin-bottom: 24px;
+}
+.bouncing-bars span {
+  width: 6px; background: #52b788; border-radius: 3px;
+  animation: bounce-bar .8s ease-in-out infinite alternate;
+}
+.bouncing-bars span:nth-child(1) { animation-delay: 0s;   height: 20px; }
+.bouncing-bars span:nth-child(2) { animation-delay: .1s;  height: 28px; }
+.bouncing-bars span:nth-child(3) { animation-delay: .2s;  height: 36px; }
+.bouncing-bars span:nth-child(4) { animation-delay: .3s;  height: 28px; }
+.bouncing-bars span:nth-child(5) { animation-delay: .4s;  height: 20px; }
+
+@keyframes bounce-bar {
+  0%   { transform: scaleY(.4); }
+  100% { transform: scaleY(1.4); }
+}
+
+#loading h1 {
+  font-size: 24px; color: #1a4d2e; margin: 0 0 8px;
+  font-weight: 700; letter-spacing: -0.01em;
+}
+#loading p {
+  font-size: 14px; color: #6b8175; margin: 0;
+}
+
+/* 顶部栏 */
+#top-bar {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px; z-index: 20;
+  background: linear-gradient(180deg, rgba(44,95,45,0.92), rgba(44,95,45,0.7) 70%, transparent);
+  pointer-events: none;
+}
+#top-bar > * { pointer-events: auto; }
+
+.top-left { display: flex; align-items: center; gap: 12px; }
+.top-left .sys-title { color: #fff; font-size: 17px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+
+.top-right { display: flex; align-items: center; gap: 10px; }
+.user-badge {
+  background: rgba(255,255,255,0.95);
+  padding: 6px 14px; border-radius: 20px;
+  font-size: 13px; font-weight: 600; color: var(--primary);
+  display: flex; align-items: center; gap: 6px;
+  box-shadow: var(--shadow-sm);
+}
+.user-badge .dot { width: 8px; height: 8px; border-radius: 50%; }
+.user-badge.anonymous .dot { background: #3498db; }
+.user-badge.realname .dot { background: #27ae60; }
+
+/* 搜索框 */
+#search-bar {
+  position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+  z-index: 60; display: flex; gap: 8px;
+}
+#search-input {
+  width: 300px; padding: 10px 16px;
+  border: 2px solid rgba(255,255,255,0.6); border-radius: 24px;
+  background: rgba(255,255,255,0.92); font-size: 15px; color: #333;
+  backdrop-filter: blur(8px); transition: border-color 0.2s var(--ease-ios);
+}
+#search-input:focus { border-color: #4a8c2a; }
+#search-btn {
+  padding: 10px 20px; border: none; border-radius: 24px;
+  background: #4a8c2a; color: #fff; font-size: 15px; cursor: pointer;
+}
+#search-btn:hover { background: #3a7022; }
+
+#search-results {
+  position: absolute; top: 108px; left: 50%; transform: translateX(-50%);
+  width: 300px; max-height: 260px; overflow-y: auto;
+  background: rgba(255,255,255,0.95); border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15); display: none; z-index: 61;
+  backdrop-filter: blur(8px);
+}
+#search-results.show { display: block; }
+#search-results .item {
+  padding: 10px 16px; cursor: pointer; font-size: 14px; color: #333;
+  border-bottom: 1px solid #f0f0f0; transition: background 0.15s;
+}
+#search-results .item:hover { background: #e8f5e0; }
+#search-results .item:last-child { border-bottom: none; }
+
+/* 图例 */
+#legend {
+  position: absolute; top: 60px; right: 16px;
+  background: rgba(255,255,255,0.88); border-radius: 10px;
+  padding: 12px 16px; font-size: 12px; color: #555; z-index: 10;
+  backdrop-filter: blur(8px);
+}
+#legend .row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+#legend .dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+/* 操作提示 */
+#hint {
+  position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.7); color: #fff; padding: 8px 20px;
+  border-radius: 20px; font-size: 13px; z-index: 10;
+  backdrop-filter: blur(8px); pointer-events: none;
+}
+
+/* ═══ 投诉面板 ═══ */
+#complaint-panel {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  background: #fff; border-radius: 16px;
+  width: 460px; max-width: 92%;
+  max-height: 85vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  z-index: 100; opacity: 0; pointer-events: none;
+  transition: all 0.4s var(--spring);
+}
+#complaint-panel.show {
+  opacity: 1; pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.panel-header {
+  background: linear-gradient(135deg, var(--primary-light), var(--primary));
+  color: #fff; padding: 20px 24px; border-radius: 16px 16px 0 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.panel-header .title-area { display: flex; align-items: center; gap: 12px; }
+.panel-header .building-icon { font-size: 28px; }
+.panel-header h2 { font-size: 18px; font-weight: 700; }
+.panel-header .subtitle { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+.panel-header .close-btn {
+  background: rgba(255,255,255,0.2); color: #fff;
+  width: 32px; height: 32px; border-radius: 50%;
+  font-size: 18px; display: flex; align-items: center; justify-content: center;
+}
+.panel-header .close-btn:hover { background: rgba(255,255,255,0.35); }
+
+.panel-body { padding: 24px; }
+
+/* 投诉方向选项卡 */
+.category-label {
+  font-size: 14px; font-weight: 600; color: var(--text);
+  margin-bottom: 12px;
+}
+.category-tabs {
+  display: flex; gap: 10px; margin-bottom: 22px;
+}
+.category-tab {
+  flex: 1; padding: 14px 8px; border-radius: var(--radius-sm);
+  border: 2px solid var(--border); background: #fafdfa;
+  text-align: center;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+/* 渐变遮罩层 */
+.category-tab::before {
+  content: ''; position: absolute; inset: 0;
+  opacity: 0; transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: inherit; z-index: 0;
+}
+.category-tab .cat-icon { font-size: 24px; display: block; margin-bottom: 4px; position: relative; z-index: 1; }
+.category-tab .cat-name { font-size: 13px; font-weight: 600; color: var(--text); position: relative; z-index: 1; transition: color 0.3s; }
+
+/* 卫生问题 - 暖琥珀黄 */
+.category-tab[data-cat="hygiene"] { --tab-color: #f0a04b; --tab-bg: #fef7ed; --tab-border: #f0c078; }
+/* 安全隐患 - 柔和珊瑚红 */
+.category-tab[data-cat="safety"]  { --tab-color: #e85d5d; --tab-bg: #fef3f3; --tab-border: #f0a0a0; }
+/* 其他 - 天空蓝 */
+.category-tab[data-cat="other"]   { --tab-color: #5b9bd5; --tab-bg: #f0f6fc; --tab-border: #a0c8e8; }
+
+.category-tab:hover {
+  border-color: var(--tab-border);
+  background: var(--tab-bg);
+}
+.category-tab:hover .cat-name { color: var(--tab-color); }
+
+.category-tab.active {
+  border-color: var(--tab-color);
+  background: var(--tab-bg);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--tab-color) 25%, transparent);
+}
+.category-tab.active .cat-name { color: var(--tab-color); font-weight: 700; }
+.category-tab.active::before {
+  opacity: 1;
+  background: linear-gradient(135deg, var(--tab-bg) 0%, color-mix(in srgb, var(--tab-color) 15%, #fff) 100%);
+}
+
+/* 文本框 */
+.content-label {
+  font-size: 14px; font-weight: 600; color: var(--text);
+  margin-bottom: 8px; display: flex; justify-content: space-between;
+}
+.content-label .char-count { font-weight: 400; color: var(--text-light); font-size: 12px; }
+
+#complaint-content {
+  width: 100%; min-height: 120px; padding: 14px;
+  border: 2px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 14px; resize: vertical; line-height: 1.6;
+  transition: border-color 0.2s;
+}
+#complaint-content:focus { border-color: var(--primary-light); }
+#complaint-content::placeholder { color: #b0b8ad; }
+
+.submit-area {
+  display: flex; gap: 12px; margin-top: 20px;
+}
+.submit-area .btn { flex: 1; padding: 12px; }
+
+/* ═══ 面板整体跟随选项卡颜色 ═══ */
+/* 默认（未选择） */
+.panel-header {
+  transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#complaint-content:focus { transition: border-color 0.4s, box-shadow 0.4s; }
+.submit-area .btn-primary { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* 选中卫生问题 — 琥珀黄 */
+#complaint-panel[data-active-cat="hygiene"] .panel-header {
+  background: linear-gradient(135deg, #f0a04b, #e08838) !important;
+}
+#complaint-panel[data-active-cat="hygiene"] #complaint-content:focus {
+  border-color: #f0a04b !important; box-shadow: 0 0 0 3px rgba(240,160,75,0.14) !important;
+}
+#complaint-panel[data-active-cat="hygiene"] .submit-area .btn-primary {
+  background: #f0a04b !important;
+}
+#complaint-panel[data-active-cat="hygiene"] .submit-area .btn-primary:hover {
+  background: #e08838 !important;
+}
+
+/* 选中安全隐患 — 珊瑚红 */
+#complaint-panel[data-active-cat="safety"] .panel-header {
+  background: linear-gradient(135deg, #e85d5d, #d94848) !important;
+}
+#complaint-panel[data-active-cat="safety"] #complaint-content:focus {
+  border-color: #e85d5d !important; box-shadow: 0 0 0 3px rgba(232,93,93,0.14) !important;
+}
+#complaint-panel[data-active-cat="safety"] .submit-area .btn-primary {
+  background: #e85d5d !important;
+}
+#complaint-panel[data-active-cat="safety"] .submit-area .btn-primary:hover {
+  background: #d94848 !important;
+}
+
+/* 选中其他 — 天空蓝 */
+#complaint-panel[data-active-cat="other"] .panel-header {
+  background: linear-gradient(135deg, #5b9bd5, #4a8bc0) !important;
+}
+#complaint-panel[data-active-cat="other"] #complaint-content:focus {
+  border-color: #5b9bd5 !important; box-shadow: 0 0 0 3px rgba(91,155,213,0.14) !important;
+}
+#complaint-panel[data-active-cat="other"] .submit-area .btn-primary {
+  background: #5b9bd5 !important;
+}
+#complaint-panel[data-active-cat="other"] .submit-area .btn-primary:hover {
+  background: #4a8bc0 !important;
+}
+
+/* 遮罩 */
+#panel-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.4); z-index: 50;
+  opacity: 0; pointer-events: none;   transition: opacity 0.4s var(--ease-ios);
+}
+#panel-overlay.show { opacity: 1; pointer-events: auto; }
+
+/* ═══ 建筑内部返回按钮 ═══ */
+#exit-building-btn {
+  position: absolute; top: 80px; left: 20px; z-index: 30;
+  background: rgba(255,255,255,0.94); border-radius: 24px;
+  padding: 8px 18px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  cursor: pointer; font-size: 14px; font-weight: 600; color: var(--primary);
+  backdrop-filter: blur(8px); display: none; transition: all 0.3s var(--spring);
+}
+#exit-building-btn.show { display: flex; align-items: center; gap: 6px; }
+#exit-building-btn:hover { background: #fff; box-shadow: 0 6px 20px rgba(0,0,0,0.18); transform: translateX(-2px); }
+
+/* ═══ 建筑内部面包屑 ═══ */
+#indoor-breadcrumb {
+  position: absolute; top: 80px; left: 50%; transform: translateX(-50%); z-index: 30;
+  background: rgba(255,255,255,0.94); border-radius: 20px;
+  padding: 6px 18px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  backdrop-filter: blur(8px); display: none; font-size: 13px; font-weight: 500;
+  align-items: center; gap: 6px; white-space: nowrap;
+}
+#indoor-breadcrumb.show { display: flex; }
+#indoor-breadcrumb .crumb { cursor: pointer; color: var(--primary); transition: color 0.2s; }
+#indoor-breadcrumb .crumb:hover { color: var(--accent); }
+#indoor-breadcrumb .crumb.current { color: var(--text); cursor: default; }
+#indoor-breadcrumb .sep { color: var(--text-light); }
+
+@media (max-width: 640px) {
+  #search-input { width: 180px; }
+  #search-results { width: 180px; }
+  #legend { top: auto; bottom: 16px; right: 16px; }
+  #complaint-panel { width: 95%; }
+}

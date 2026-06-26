@@ -1,0 +1,316 @@
+/* ═══ 入口页样式 — 简约灵动 ═══ */
+
+/* ── 本页专属变量 ── */
+.entrance-body {
+  --bg-base: #f7faf8;
+  --card-bg: #ffffff;
+  --ink: #1a2e22;
+  --ink-soft: #6b8175;
+  --brand: #1a4d2e;
+  --accent: #52b788;
+  --accent-soft: rgba(82, 183, 136, 0.12);
+  --border: #e3ebe6;
+  --radius-card: 16px;
+  --radius-btn: 12px;
+  --radius-input: 10px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-base);
+  min-height: 100vh;
+  padding: 24px;
+  font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── 背景光斑层（签名灵动元素）── */
+.ambient-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.4;
+  will-change: transform;
+}
+.blob-1 {
+  width: 420px; height: 420px;
+  background: var(--accent);
+  top: -80px; left: -60px;
+  animation: float1 24s ease-in-out infinite;
+}
+.blob-2 {
+  width: 360px; height: 360px;
+  background: #6cc4d8;
+  bottom: -60px; right: -40px;
+  opacity: 0.3;
+  animation: float2 28s ease-in-out infinite;
+}
+.blob-3 {
+  width: 300px; height: 300px;
+  background: #a8d8b9;
+  top: 40%; right: 20%;
+  opacity: 0.25;
+  animation: float3 20s ease-in-out infinite;
+}
+
+@keyframes float1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(60px, 40px) scale(1.1); }
+  66%      { transform: translate(-20px, 80px) scale(0.95); }
+}
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-50px, -40px) scale(1.15); }
+}
+@keyframes float3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40%      { transform: translate(-40px, 30px) scale(1.08); }
+  70%      { transform: translate(30px, -50px) scale(0.92); }
+}
+
+/* ── 卡片 ── */
+.entrance-card {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-card);
+  padding: 48px 40px 36px;
+  box-shadow: 0 8px 40px rgba(26, 77, 46, 0.08);
+  max-width: 420px;
+  width: 100%;
+  animation: cardIn 0.6s var(--spring);
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── 标题区 ── */
+.card-header { text-align: center; margin-bottom: 36px; }
+
+.eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+}
+
+.entrance-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--brand);
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.entrance-subtitle {
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+/* ── 选项按钮 ── */
+.entrance-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.entrance-options.hide {
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  position: absolute;
+}
+
+.entrance-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: var(--radius-btn);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  width: 100%;
+  background: var(--card-bg);
+  border: 1.5px solid var(--border);
+  color: var(--ink);
+  transition: all 0.3s var(--spring);
+  animation: btnIn 0.45s var(--spring) both;
+}
+.entrance-btn:nth-child(1) { animation-delay: 0.15s; }
+.entrance-btn:nth-child(2) { animation-delay: 0.28s; }
+
+@keyframes btnIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.entrance-btn .btn-icon {
+  width: 40px; height: 40px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--brand);
+  transition: all 0.25s var(--ease-ios);
+}
+.entrance-btn .btn-icon svg { width: 22px; height: 22px; }
+
+.entrance-btn .label-wrap { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.entrance-btn .label-wrap .main { font-size: 15px; color: var(--ink); }
+.entrance-btn .label-wrap .desc { font-size: 12px; font-weight: 400; color: var(--ink-soft); line-height: 1.4; }
+
+.entrance-btn .arrow {
+  width: 18px; height: 18px;
+  color: var(--ink-soft);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: all 0.25s var(--ease-ios);
+  flex-shrink: 0;
+}
+.entrance-btn .arrow svg { width: 100%; height: 100%; }
+
+/* hover — 填充品牌色 */
+.entrance-btn:hover {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(26, 77, 46, 0.18);
+}
+.entrance-btn:hover .btn-icon { background: rgba(255,255,255,0.18); color: #fff; }
+.entrance-btn:hover .label-wrap .main,
+.entrance-btn:hover .label-wrap .desc { color: rgba(255,255,255,0.9); }
+.entrance-btn:hover .arrow { opacity: 1; transform: translateX(0); color: #fff; }
+
+/* active — 按压感 */
+.entrance-btn:active { transform: translateY(0) scale(0.97); transition: transform 0.12s var(--spring); }
+
+/* ── 实名表单 ── */
+.realname-form {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.35s var(--ease-ios), transform 0.35s var(--spring);
+}
+.realname-form.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.form-group { margin-bottom: 18px; }
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 7px;
+  letter-spacing: 0.01em;
+}
+.form-group input {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-input);
+  font-size: 15px;
+  color: var(--ink);
+  background: #fafdfb;
+  transition: border-color 0.2s var(--ease-ios), box-shadow 0.25s var(--ease-ios), background 0.2s var(--ease-ios);
+}
+.form-group input::placeholder { color: #aab8af; }
+.form-group input:focus {
+  border-color: var(--accent);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.14);
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+}
+.form-actions .btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-btn);
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.form-actions .btn-primary {
+  background: var(--brand);
+  color: #fff;
+}
+.form-actions .btn-primary:hover { background: #143d24; box-shadow: 0 4px 12px rgba(26,77,46,0.25); }
+.form-actions .btn-primary:active { transform: scale(0.98); }
+.form-actions .btn-secondary {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--ink-soft);
+}
+.form-actions .btn-secondary:hover { border-color: var(--ink-soft); color: var(--ink); }
+.form-actions .btn-secondary:active { transform: scale(0.98); }
+
+/* ── 底部分隔与链接 ── */
+.entrance-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+  margin: 28px 0 18px;
+}
+
+.entrance-footer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.entrance-footer .admin-link {
+  color: var(--brand);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.entrance-footer .admin-link:hover { color: var(--accent); }
+
+/* ── 响应式 ── */
+@media (max-width: 480px) {
+  .entrance-card { padding: 36px 24px 28px; }
+  .entrance-title { font-size: 22px; }
+  .blob-1 { width: 280px; height: 280px; }
+  .blob-2 { width: 240px; height: 240px; }
+  .blob-3 { width: 200px; height: 200px; }
+  .entrance-btn { padding: 14px 14px; }
+  .entrance-btn .btn-icon { width: 36px; height: 36px; }
+}
+
+/* ── 尊重 reduced-motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .blob { animation: none !important; }
+  .entrance-card,
+  .entrance-btn { animation: none !important; }
+  .entrance-options,
+  .realname-form { transition: none !important; }
+  * { scroll-behavior: auto !important; }
+}

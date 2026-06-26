@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D校园投诉系统 - 学生端</title>
+<link rel="stylesheet" href="css/common.css">
+<link rel="stylesheet" href="css/student.css">
+</head>
+<body class="student-body">
+
+<!-- 3D 地图容器 -->
+<div id="map-container"><div id="label-container"></div></div>
+
+<!-- 加载画面 -->
+<div id="loading">
+  <div class="loading-map-icon">🗺️</div>
+  <div class="bouncing-bars">
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <h1>3D 校园投诉系统</h1>
+  <p>正在加载校园地图...</p>
+</div>
+
+<!-- 顶部栏 -->
+<div id="top-bar">
+  <div class="top-left">
+    <span class="sys-title">🏫 校园投诉系统</span>
+  </div>
+  <div class="top-right">
+    <div class="user-badge" id="user-badge"></div>
+    <button class="btn btn-secondary" style="padding:6px 14px;font-size:13px;" onclick="logout()">退出</button>
+  </div>
+</div>
+
+<!-- 搜索框 -->
+<div id="search-bar">
+  <input id="search-input" placeholder="搜索建筑 / 地点..." autocomplete="off">
+  <button id="search-btn">搜索</button>
+</div>
+<div id="search-results"></div>
+
+<!-- 图例 -->
+<div id="legend">
+  <div class="row"><span class="dot" style="background:#b0b0b0"></span> 教学楼 / 办公楼</div>
+  <div class="row"><span class="dot" style="background:#d47a6a"></span> 宿舍</div>
+  <div class="row"><span class="dot" style="background:#e6c87a"></span> 餐厅 / 食堂</div>
+  <div class="row"><span class="dot" style="background:#4aa8d8"></span> 湖泊 / 河流</div>
+  <div class="row"><span class="dot" style="background:#6a9fd4"></span> 图书馆 / 科技楼</div>
+</div>
+
+<!-- 操作提示 -->
+<div id="hint">🖱️ 点击建筑进入内部 · 拖拽旋转视角 · 滚轮缩放</div>
+
+<!-- 建筑内部返回按钮 -->
+<div id="exit-building-btn" onclick="exitBuilding()">
+  <span>← 返回校园</span>
+</div>
+
+<!-- 建筑内部面包屑 -->
+<div id="indoor-breadcrumb">
+  <span class="crumb" onclick="exitBuilding()">校园</span>
+  <span class="sep">›</span>
+  <span class="crumb current" id="crumb-building"></span>
+</div>
+
+<!-- 投诉面板遮罩 -->
+<div id="panel-overlay"></div>
+
+<!-- 投诉面板 -->
+<div id="complaint-panel">
+  <div class="panel-header">
+    <div class="title-area">
+      <span class="building-icon">📍</span>
+      <div>
+        <h2 id="panel-building-name"></h2>
+        <div class="subtitle">请选择投诉方向并填写内容</div>
+      </div>
+    </div>
+    <button class="close-btn" onclick="closeComplaintPanel()">✕</button>
+  </div>
+  <div class="panel-body">
+    <div class="category-label">投诉方向</div>
+    <div class="category-tabs" id="category-tabs"></div>
+
+    <div class="content-label">
+      <span>具体内容</span>
+      <span class="char-count"><span id="char-count">0</span> / 500</span>
+    </div>
+    <textarea id="complaint-content" placeholder="请详细描述您遇到的问题，例如：某楼层卫生间水龙头损坏漏水..." maxlength="500"></textarea>
+
+    <div class="submit-area">
+      <button class="btn btn-secondary" onclick="closeComplaintPanel()">取消</button>
+      <button class="btn btn-primary" onclick="submitComplaint()">发送投诉</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Three.js importmap（国内CDN加速）-->
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+</script>
+
+<script src="js/storage.js"></script>
+<script src="js/sensitive-words.js"></script>
+<script src="js/campus-data.js"></script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+// 暴露给全局供 campus-map.js 使用
+window.THREE = THREE;
+window.OrbitControls = OrbitControls;
+window.CSS2DRenderer = CSS2DRenderer;
+window.CSS2DObject = CSS2DObject;
+
+// 加载地图引擎脚本
+const script = document.createElement('script');
+script.src = 'js/campus-map.js';
+script.onload = initApp;
+document.head.appendChild(script);
+
+function initApp() {
+  // 身份校验
+  const user = Store.getUser();
+  if (!user) {
+    window.location.href = 'index.html';
+    return;
+  }
+
+  // 显示用户徽章
+  const badge = document.getElementById('user-badge');
+  if (user.type === 'anonymous') {
+    badge.className = 'user-badge anonymous';
+    badge.innerHTML = '<span class="dot"></span> 匿名用户';
+  } else {
+    badge.className = 'user-badge realname';
+    badge.innerHTML = `<span class="dot"></span> ${user.name}（${user.studentId}）`;
+  }
+
+  // ═══ 投诉面板逻辑（独立于地图，确保即使地图渲染失败也能投诉）═══
+  let selectedBuilding = null;
+  let selectedCategory = null;
+
+  // 渲染投诉方向选项卡
+  function renderCategoryTabs() {
+    const tabsEl = document.getElementById('category-tabs');
+    tabsEl.innerHTML = window.CATEGORIES.map(c => `
+      <div class="category-tab" data-cat="${c.id}" onclick="selectCategory('${c.id}')">
+        <span class="cat-icon">${c.icon}</span>
+        <span class="cat-name">${c.name}</span>
+      </div>
+    `).join('');
+  }
+  renderCategoryTabs();
+
+  // 暴露给全局
+  window.selectCategory = (catId) => {
+    selectedCategory = catId;
+    document.querySelectorAll('.category-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.cat === catId);
+    });
+    // 整个面板跟随选项卡颜色
+    document.getElementById('complaint-panel').dataset.activeCat = catId;
+  };
+
+  window.openComplaintPanel = (building) => {
+    // 如果选中了房间，显示"建筑名 · 房间名"
+    const displayName = building.roomName
+      ? `${building.name} · ${building.roomName}`
+      : building.name;
+    document.getElementById('panel-building-name').textContent = displayName;
+    document.getElementById('complaint-content').value = '';
+    document.getElementById('char-count').textContent = '0';
+    selectedCategory = null;
+    document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('complaint-panel').dataset.activeCat = '';
+    document.getElementById('complaint-panel').classList.add('show');
+    document.getElementById('panel-overlay').classList.add('show');
+  };
+
+  window.closeComplaintPanel = () => {
+    document.getElementById('complaint-panel').classList.remove('show');
+    document.getElementById('panel-overlay').classList.remove('show');
+  };
+
+  // 字数统计
+  document.getElementById('complaint-content').addEventListener('input', (e) => {
+    document.getElementById('char-count').textContent = e.target.value.length;
+  });
+
+  // 点击遮罩关闭
+  document.getElementById('panel-overlay').addEventListener('click', closeComplaintPanel);
+
+  // 提交投诉
+  window.submitComplaint = () => {
+    const user = Store.getUser();
+    if (!user) { window.location.href = 'index.html'; return; }
+    if (!selectedCategory) { showToast('请选择投诉方向', 'error'); return; }
+    const content = document.getElementById('complaint-content').value.trim();
+    if (!content) { showToast('请填写投诉内容', 'error'); return; }
+
+    // 敏感词检测
+    const result = checkSensitive(content);
+    if (!result.passed) {
+      showToast(result.message, 'error');
+      return;
+    }
+
+    // 存储投诉
+    const bName = selectedBuilding.roomName
+      ? `${selectedBuilding.name} · ${selectedBuilding.roomName}`
+      : selectedBuilding.name;
+    const complaint = Store.addComplaint({
+      buildingId: selectedBuilding.roomId || selectedBuilding.id,
+      buildingName: bName,
+      category: selectedCategory,
+      categoryName: window.CATEGORIES.find(c => c.id === selectedCategory).name,
+      content: content,
+      userType: user.type,
+      reporter: user.type === 'anonymous' ? '匿名用户' : `${user.name}（${user.studentId}）`
+    });
+
+    showToast('投诉提交成功！学校已收到您的反馈', 'success');
+    closeComplaintPanel();
+  };
+
+  // ═══ 搜索功能（独立于地图，降级时仍可用）═══
+  const input = document.getElementById('search-input');
+  const results = document.getElementById('search-results');
+  const doSearch = (q) => {
+    if (!q.trim()) { results.classList.remove('show'); return; }
+    const matches = window.BUILDINGS.filter(b => b.name.includes(q.trim()) || b.id.includes(q.trim().toLowerCase()));
+    results.innerHTML = matches.map(b => `<div class="item" data-id="${b.id}">${b.name}</div>`).join('');
+    results.classList.toggle('show', matches.length > 0);
+  };
+  input.addEventListener('input', () => doSearch(input.value));
+  document.getElementById('search-btn').addEventListener('click', () => doSearch(input.value));
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(input.value); });
+  results.addEventListener('click', e => {
+    const item = e.target.closest('.item');
+    if (item) {
+      const b = window.BUILDINGS.find(x => x.id === item.dataset.id);
+      if (b) {
+        selectedBuilding = b;
+        if (map) map.focusOnBuilding(b.id);
+        openComplaintPanel(b);
+      }
+      results.classList.remove('show'); input.value = '';
+    }
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#search-bar') && !e.target.closest('#search-results')) results.classList.remove('show');
+  });
+
+  // ═══ 初始化 3D 地图（带降级保护）═══
+  let map = null;
+  try {
+    const container = document.getElementById('map-container');
+    map = new CampusMap3D(container);
+
+    // ★ 设置点击建筑回调 → 可进入建筑直接进入内部，不可进入则直接投诉
+    map.onBuildingSelect = (building) => {
+      selectedBuilding = building;
+      if (window.NON_ENTERABLE.has(building.id) || !window.BUILDING_ROOMS[building.id]) {
+        openComplaintPanel(building);
+      } else if (map) {
+        const ok = map.enterBuilding(building);
+        if (ok) {
+          document.getElementById('exit-building-btn').classList.add('show');
+          document.getElementById('indoor-breadcrumb').classList.add('show');
+          document.getElementById('crumb-building').textContent = building.name;
+          document.getElementById('hint').style.display = 'none';
+          document.getElementById('legend').style.display = 'none';
+        }
+      }
+    };
+
+    // ★ 设置点击房间回调 → 投诉面板
+    map.onRoomSelect = (roomData, buildingData) => {
+      selectedBuilding = { ...buildingData, roomName: roomData.name, roomId: roomData.id };
+      openComplaintPanel(selectedBuilding);
+    };
+
+    map.onLandmarkSelect = (name) => {
+      showToast(`已选中：${name}（地标暂不支持投诉，请选择建筑）`, 'info');
+    };
+  } catch (err) {
+    console.error('3D地图初始化失败：', err);
+    // 地图加载失败时：保留 bouncing bars 动画和地图图标，追加错误提示
+    const loading = document.getElementById('loading');
+    loading.querySelector('.loading-map-icon').textContent = '⚠️';
+    // bouncing bars 保持显示，但降低速度表示异常
+    const bars = loading.querySelectorAll('.bouncing-bars span');
+    bars.forEach(b => { b.style.animationDuration = '2s'; b.style.background = '#e67e22'; });
+    loading.querySelector('#loading p').textContent = '地图加载失败，您仍可通过搜索功能选择建筑进行投诉';
+  }
+
+  // ═══ 退出建筑 ═══
+  window.exitBuilding = () => {
+    if (!map) return;
+    map.exitBuilding();
+    document.getElementById('exit-building-btn').classList.remove('show');
+    document.getElementById('indoor-breadcrumb').classList.remove('show');
+    document.getElementById('hint').style.display = '';
+    document.getElementById('legend').style.display = '';
+  };
+
+  // 隐藏加载画面
+  setTimeout(() => { document.getElementById('loading').classList.add('hidden'); }, 800);
+
+  console.log('3D 校园投诉系统 - 学生端已加载');
+}
+</script>
+
+<script>
+// Toast 函数（全局）
+function showToast(msg, type='info') {
+  const toast = document.getElementById('toast');
+  toast.className = type;
+  toast.innerHTML = `<span class="toast-icon">${type==='success'?'✅':type==='error'?'❌':'ℹ️'}</span>${msg}`;
+  toast.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function logout() {
+  Store.clearUser();
+  window.location.href = 'index.html';
+}
+</script>
+
+</body>
+</html>
