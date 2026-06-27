@@ -784,6 +784,26 @@ class CampusMap3D {
     requestAnimationFrame(()=>this._animate());
     const time=Date.now()*0.001;
     if(this.waterSurface){const op=0.3+Math.sin(time*1.5)*0.1;this.waterSurface.material.opacity=op;this.waterSurface.position.y=0.12+Math.sin(time*0.8)*0.03;}
+
+    // 呼吸光点动画
+    if (this._pulseDots && this._pulseDots.length > 0) {
+      this._pulseDots.forEach(dot => {
+        const t = time * 1.8 + dot.userData.phase;
+        const breathe = 0.5 + Math.sin(t) * 0.5; // 0~1 正弦波
+        if (dot.userData.pulseType === 'core') {
+          // 发光核心：缩放呼吸 + 上下微浮动
+          dot.scale.setScalar(0.8 + breathe * 0.5);
+          dot.material.emissiveIntensity = 0.3 + breathe * 0.4;
+          dot.position.y = dot.userData.baseY + Math.sin(t * 0.7) * 0.25;
+        } else if (dot.userData.pulseType === 'glow') {
+          // 光晕：大范围缩放 + 透明度波动
+          dot.scale.setScalar(0.9 + breathe * 0.9);
+          dot.material.opacity = 0.12 + breathe * 0.3;
+          dot.position.y = dot.userData.baseY + Math.sin(t * 0.7 + 0.3) * 0.2;
+        }
+      });
+    }
+
     this.controls.update();
     this.renderer.render(this.scene,this.camera);
     this.labelRenderer.render(this.scene,this.camera);
@@ -892,6 +912,39 @@ class CampusMap3D {
 
     // 保存房间 mesh 引用用于交互
     this._roomMeshes = roomMeshes;
+
+    // ═══ 呼吸光点（被投诉房间标记）═══
+    this._pulseDots = [];
+    const activeComplaints = typeof Store !== 'undefined' ? Store.getActiveComplaintsByBuilding(buildingData.id) : {};
+    rooms.forEach(room => {
+      const cats = activeComplaints[room.id];
+      if (!cats || cats.length === 0) return;
+      // 投诉方向对应颜色
+      const catColors = { hygiene: 0xf0a04b, safety: 0xe85d5d, other: 0x5b9bd5 };
+      cats.forEach((cat, ci) => {
+        const offsetX = cats.length === 1 ? 0 : (ci - (cats.length-1)/2) * 1.2;
+        const basePos = { x: room.pos.x + offsetX, y: room.pos.y + room.h + 1.2, z: room.pos.z };
+        const hexColor = catColors[cat] || 0xffffff;
+
+        // 内层发光核心（Toon材质 + emissive）
+        const coreGeo = new THREE.SphereGeometry(0.3, 16, 16);
+        const coreMat = new THREE.MeshToonMaterial({ color: hexColor, emissive: hexColor, emissiveIntensity: 0.5 });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        core.position.copy(basePos);
+        core.userData = { pulseType: 'core', baseY: basePos.y, phase: Math.random() * Math.PI * 2, category: cat };
+        this.internalGroup.add(core);
+        this._pulseDots.push(core);
+
+        // 外层柔和光晕（半透明 Toon）
+        const glowGeo = new THREE.SphereGeometry(0.65, 16, 16);
+        const glowMat = new THREE.MeshToonMaterial({ color: hexColor, transparent: true, opacity: 0.3 });
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        glow.position.copy(basePos);
+        glow.userData = { pulseType: 'glow', baseY: basePos.y, phase: core.userData.phase + 0.5 };
+        this.internalGroup.add(glow);
+        this._pulseDots.push(glow);
+      });
+    });
 
     // 相机动画：飞入建筑内部俯视
     const tp = { x: 0, y: innerH + 6, z: innerD/2 + 10 };

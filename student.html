@@ -98,6 +98,18 @@
 
 <div id="toast"></div>
 
+<!-- 已解决投诉通知弹窗 -->
+<div id="resolve-notify" class="resolve-notify-modal">
+  <div class="resolve-card">
+    <div class="resolve-header">
+      <span class="resolve-icon">📬</span>
+      <h2>投诉处理结果</h2>
+      <button class="resolve-close" onclick="closeResolveNotify()">✕</button>
+    </div>
+    <div class="resolve-body" id="resolve-list"></div>
+  </div>
+</div>
+
 <!-- Three.js importmap（国内CDN加速）-->
 <script type="importmap">
 { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
@@ -118,10 +130,33 @@ window.OrbitControls = OrbitControls;
 window.CSS2DRenderer = CSS2DRenderer;
 window.CSS2DObject = CSS2DObject;
 
-// 加载地图引擎脚本
+// 加载超时兜底：10秒后如果地图还没初始化，自动隐藏加载画面
+const loadingTimeout = setTimeout(() => {
+  const loading = document.getElementById('loading');
+  if (!loading.classList.contains('hidden')) {
+    loading.querySelector('.loading-map-icon').textContent = '⚠️';
+    loading.querySelector('h1').textContent = '地图加载超时';
+    loading.querySelector('p').textContent = '网络较慢，您仍可通过搜索功能选择建筑进行投诉';
+    const bars = loading.querySelectorAll('.bouncing-bars span');
+    bars.forEach(b => { b.style.animationDuration = '2s'; b.style.background = '#e67e22'; });
+    setTimeout(() => loading.classList.add('hidden'), 3000);
+  }
+}, 10000);
+
+// 加载地图引擎脚本（带错误处理）
 const script = document.createElement('script');
 script.src = 'js/campus-map.js';
-script.onload = initApp;
+script.onload = () => { clearTimeout(loadingTimeout); initApp(); };
+script.onerror = () => {
+  clearTimeout(loadingTimeout);
+  const loading = document.getElementById('loading');
+  loading.querySelector('.loading-map-icon').textContent = '⚠️';
+  loading.querySelector('h1').textContent = '地图加载失败';
+  loading.querySelector('p').textContent = '请刷新页面重试，或通过搜索功能选择建筑进行投诉';
+  const bars = loading.querySelectorAll('.bouncing-bars span');
+  bars.forEach(b => { b.style.animationDuration = '2s'; b.style.background = '#e67e22'; });
+  setTimeout(() => loading.classList.add('hidden'), 3000);
+};
 document.head.appendChild(script);
 
 function initApp() {
@@ -208,6 +243,13 @@ function initApp() {
     const result = checkSensitive(content);
     if (!result.passed) {
       showToast(result.message, 'error');
+      return;
+    }
+
+    // 重复投诉检测（同房间+同方向+24h内）
+    const roomId = selectedBuilding.roomId || selectedBuilding.id;
+    if (Store.checkDuplicate(roomId, selectedCategory)) {
+      showToast('该问题已有同学投诉，学校正在处理中，请耐心等待', 'info');
       return;
     }
 
@@ -309,6 +351,50 @@ function initApp() {
     document.getElementById('hint').style.display = '';
     document.getElementById('legend').style.display = '';
   };
+
+  // ═══ 已解决投诉通知（仅实名用户，每条投诉最多通知2次）═══
+  const user = Store.getUser();
+  if (user && user.type === 'realname') {
+    const reporter = `${user.name}（${user.studentId}）`;
+    const replied = Store.getRepliedComplaintsForUser(reporter);
+    const toNotify = replied.filter(c => Store.getNotifyCount(c.id) < 2);
+    if (toNotify.length > 0) {
+      // 渲染通知列表
+      const listEl = document.getElementById('resolve-list');
+      listEl.innerHTML = toNotify.map(c => `
+        <div class="resolve-item">
+          <div class="resolve-location">📍 ${c.buildingName}</div>
+          <div class="resolve-category">
+            <span class="cat-tag ${c.category}">${c.categoryName}</span>
+          </div>
+          <div class="resolve-content">📝 ${escapeHtml(c.content)}</div>
+          <div class="resolve-reply">
+            <div class="reply-label">学校回复：</div>
+            <div class="reply-text">${escapeHtml(c.reply)}</div>
+          </div>
+        </div>
+      `).join('');
+      // 显示弹窗
+      document.getElementById('resolve-notify').classList.add('show');
+      document.getElementById('panel-overlay').classList.add('show');
+      // 关闭时标记已通知
+      window._resolveToNotify = toNotify;
+    }
+  }
+
+  window.closeResolveNotify = () => {
+    document.getElementById('resolve-notify').classList.remove('show');
+    document.getElementById('panel-overlay').classList.remove('show');
+    if (window._resolveToNotify) {
+      window._resolveToNotify.forEach(c => Store.markNotified(c.id));
+      window._resolveToNotify = null;
+    }
+  };
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
 
   // 隐藏加载画面
   setTimeout(() => { document.getElementById('loading').classList.add('hidden'); }, 800);
