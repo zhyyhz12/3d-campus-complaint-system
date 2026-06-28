@@ -26,6 +26,9 @@ const Store = {
     complaint.createdAt = new Date().toISOString();
     complaint.status = 'pending'; // pending | replied
     complaint.reply = '';
+    complaint.urgency = 3;       // 紧迫度 1-5
+    complaint.aiReason = '';     // AI分析原因
+    complaint.aiAdvice = '';     // AI建议措施
     list.unshift(complaint); // 最新的在前
     localStorage.setItem('qau_complaints', JSON.stringify(list));
     return complaint;

@@ -81,6 +81,8 @@
 .stat-card.total .stat-icon { background: #e8f5e0; }
 .stat-card.pending { border-left-color: #f39c12; }
 .stat-card.pending .stat-icon { background: #fef5e7; }
+.stat-card.urgent { border-left-color: #e74c3c; }
+.stat-card.urgent .stat-icon { background: #fdeaea; }
 
 /* 筛选栏 */
 .filter-bar {

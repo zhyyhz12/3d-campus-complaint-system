@@ -110,6 +110,39 @@
   </div>
 </div>
 
+<!-- ═══ AI 校园助手 ═══ -->
+<button id="ai-fab" onclick="toggleAI()" title="AI 校园助手">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+</button>
+
+<div id="ai-panel">
+  <div class="ai-header">
+    <span class="ai-title">🤖 AI 校园助手</span>
+    <button class="ai-close" onclick="toggleAI()">✕</button>
+  </div>
+  <div class="ai-messages" id="ai-messages"></div>
+  <div class="ai-input-row">
+    <input id="ai-input" placeholder="输入问题，如：图书馆在哪里？" />
+    <button id="ai-send">发送</button>
+  </div>
+</div>
+
+<!-- AI 分析结果弹窗 -->
+<div id="ai-analysis-modal" class="ai-analysis-overlay">
+  <div class="ai-analysis-card">
+    <div class="ai-analysis-header">
+      <span>🤖 AI 分析结果</span>
+      <button class="ai-analysis-close" onclick="closeAIAnalysis()">✕</button>
+    </div>
+    <div class="ai-analysis-body" id="ai-analysis-body"></div>
+    <div class="ai-analysis-footer">
+      <button class="btn btn-primary" onclick="closeAIAnalysis()">我知道了</button>
+    </div>
+  </div>
+</div>
+
 <!-- Three.js importmap（国内CDN加速）-->
 <script type="importmap">
 { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
@@ -118,6 +151,7 @@
 <script src="js/storage.js"></script>
 <script src="js/sensitive-words.js"></script>
 <script src="js/campus-data.js"></script>
+<script src="js/ai-assistant.js"></script>
 
 <script type="module">
 import * as THREE from 'three';
@@ -267,8 +301,31 @@ function initApp() {
       reporter: user.type === 'anonymous' ? '匿名用户' : `${user.name}（${user.studentId}）`
     });
 
-    showToast('投诉提交成功！学校已收到您的反馈', 'success');
     closeComplaintPanel();
+
+    // AI 即时分析
+    showToast('投诉已提交，AI正在分析中...', 'info');
+    fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: bName,
+        category: selectedCategory,
+        content: content
+      })
+    })
+    .then(r => r.json())
+    .then(analysis => {
+      Store.updateComplaint(complaint.id, {
+        urgency: analysis.urgency || 3,
+        aiReason: analysis.reason || '',
+        aiAdvice: analysis.advice || ''
+      });
+      showAIAnalysis(analysis, bName);
+    })
+    .catch(() => {
+      showToast('投诉提交成功！学校已收到您的反馈', 'success');
+    });
   };
 
   // ═══ 搜索功能（独立于地图，降级时仍可用）═══
@@ -353,7 +410,6 @@ function initApp() {
   };
 
   // ═══ 已解决投诉通知（仅实名用户，每条投诉最多通知2次）═══
-  const user = Store.getUser();
   if (user && user.type === 'realname') {
     const reporter = `${user.name}（${user.studentId}）`;
     const replied = Store.getRepliedComplaintsForUser(reporter);
@@ -395,6 +451,34 @@ function initApp() {
     if (!str) return '';
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
+
+  // ═══ AI 分析结果弹窗 ═══
+  window.showAIAnalysis = (analysis, location) => {
+    const stars = '⭐'.repeat(analysis.urgency || 3);
+    const body = document.getElementById('ai-analysis-body');
+    body.innerHTML = `
+      <div class="analysis-location">📍 ${escapeHtml(location)}</div>
+      <div class="analysis-urgency">
+        <span>紧迫度：</span><span class="stars">${stars}</span>
+        <span class="urgency-label">${analysis.urgency >= 4 ? '紧急' : analysis.urgency >= 3 ? '一般' : '轻微'}</span>
+      </div>
+      <div class="analysis-section">
+        <div class="analysis-label">🔍 可能原因</div>
+        <div class="analysis-text">${escapeHtml(analysis.reason || '正在分析中...')}</div>
+      </div>
+      <div class="analysis-section">
+        <div class="analysis-label">💡 建议措施</div>
+        <div class="analysis-text">${escapeHtml(analysis.advice || '请稍等...')}</div>
+      </div>
+    `;
+    document.getElementById('ai-analysis-modal').classList.add('show');
+    document.getElementById('panel-overlay').classList.add('show');
+  };
+
+  window.closeAIAnalysis = () => {
+    document.getElementById('ai-analysis-modal').classList.remove('show');
+    document.getElementById('panel-overlay').classList.remove('show');
+  };
 
   // 隐藏加载画面
   setTimeout(() => { document.getElementById('loading').classList.add('hidden'); }, 800);

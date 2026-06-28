@@ -149,14 +149,16 @@ function renderStats() {
     hygiene: list.filter(c => c.category === 'hygiene').length,
     safety: list.filter(c => c.category === 'safety').length,
     other: list.filter(c => c.category === 'other').length,
-    pending: list.filter(c => c.status === 'pending').length
+    pending: list.filter(c => c.status === 'pending').length,
+    urgent: list.filter(c => c.urgency >= 4).length
   };
   const cards = [
     { key:'total', icon:'📊', num:stats.total, label:'投诉总数' },
     { key:'hygiene', icon:'🧹', num:stats.hygiene, label:'卫生问题' },
     { key:'safety', icon:'⚠️', num:stats.safety, label:'安全隐患' },
     { key:'other', icon:'📋', num:stats.other, label:'其他' },
-    { key:'pending', icon:'⏳', num:stats.pending, label:'待回复' }
+    { key:'pending', icon:'⏳', num:stats.pending, label:'待回复' },
+    { key:'urgent', icon:'🚨', num:stats.urgent, label:'紧急投诉' }
   ];
   document.getElementById('stats-grid').innerHTML = cards.map(c => `
     <div class="stat-card ${c.key}">
@@ -185,6 +187,8 @@ function getFilteredList() {
       (c.reporter && c.reporter.toLowerCase().includes(search))
     );
   }
+  // 按紧迫度降序排列
+  list.sort((a, b) => (b.urgency || 0) - (a.urgency || 0));
   return list;
 }
 
@@ -208,6 +212,7 @@ function renderTable() {
     <table>
       <thead>
         <tr>
+          <th style="width:50px">紧迫</th>
           <th>投诉地点</th>
           <th>投诉方向</th>
           <th>投诉人员</th>
@@ -220,6 +225,7 @@ function renderTable() {
       <tbody>
         ${list.map(c => `
           <tr>
+            <td style="text-align:center;font-size:16px;">${'⭐'.repeat(c.urgency || 3)}</td>
             <td><strong>${c.buildingName}</strong></td>
             <td><span class="cat-tag ${c.category}">${c.categoryName}</span></td>
             <td>${c.reporter}</td>
